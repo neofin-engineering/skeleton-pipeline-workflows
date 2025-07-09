@@ -1,0 +1,105 @@
+# 📄 generate-tvars.yml
+# Action: Gera arquivo terraform.auto.tfvars.json com base em variáveis dinâmicas e segredos
+# Objetivo: Gera arquivo terraform.auto.tfvars.json com base em variáveis dinâmicas e segredos
+name: 'Generate tfvars'
+description: 'Gera arquivo terraform.auto.tfvars.json com base em variáveis dinâmicas e segredos'
+
+inputs:
+  AWS_REGION:
+    required: true
+  PROJECT_NAME:
+    required: true
+  ENVIRONMENT:
+    required: true
+  GLOBAL_ENV_VARS_JSON:
+    required: true
+  ENVIRONMENTS:
+    required: true
+  aws_access_key_id:
+    required: true
+  aws_secret_access_key:
+    required: true
+  s3_bucket_name:
+    required: true
+  create_sqs_queue:
+    description: "Define se a fila SQS deve ser criada (true/false)."
+    required: true
+    type: string
+    default: "true"
+  use_existing_sqs_trigger:
+    description: "Define se uma fila SQS existente será usada como trigger para a Lambda."
+    required: true
+    type: string
+    default: "false"
+  existing_sqs_queue_name:
+    description: "O NOME da fila SQS existente a ser usada como trigger (requer use_existing_sqs_trigger=true)."
+    required: false
+    type: string
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    # 📊 Verificar o sucesso no recebimento das variáveis 
+    - name: Debug variáveis de entrada na Generate tfvars
+      shell: bash
+      run: |
+        echo "project_name=${{ inputs.PROJECT_NAME }}"
+        echo "environment=${{ inputs.ENVIRONMENT }}"
+        echo "s3_bucket_name=${{ inputs.s3_bucket_name }}"
+        echo "aws_region=${{ inputs.AWS_REGION }}"
+        echo "create_sqs_queue=${{ inputs.create_sqs_queue }}" 
+        echo "use_existing_sqs_trigger=${{ inputs.use_existing_sqs_trigger }}"
+        echo "existing_sqs_queue_name=${{ inputs.existing_sqs_queue_name }}"
+        echo "---"
+
+    # 🧾 Chama o script Bash externo para gerar o arquivo terraform.auto.tfvars.json
+    - name: Gerar arquivo terraform.auto.tfvars.json
+      shell: bash
+      run: |
+        # Verifica se o script existe
+        if [ ! -f "${{ github.action_path }}/scripts/generate_tfvars.sh" ]; then
+          echo "❌ Script generate_tfvars.sh não encontrado em ${{ github.action_path }}/scripts/"
+          exit 1
+        fi
+        # Executa o script passando todos os inputs como variáveis de ambiente
+        # O script usará estas variáveis para construir o JSON.
+        bash "${{ github.action_path }}/scripts/generate_tfvars.sh"
+      env: # Passa todos os inputs da Action como variáveis de ambiente para o script Bash
+        AWS_REGION: ${{ inputs.AWS_REGION }}
+        PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
+        ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
+        GLOBAL_ENV_VARS_JSON: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
+        ENVIRONMENTS: ${{ inputs.ENVIRONMENTS }}
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+        S3_BUCKET_NAME: ${{ inputs.s3_bucket_name }}
+        CREATE_SQS_QUEUE: ${{ inputs.create_sqs_queue }}
+        USE_EXISTING_SQS_TRIGGER: ${{ inputs.use_existing_sqs_trigger }}
+        EXISTING_SQS_QUEUE_NAME: ${{ inputs.existing_sqs_queue_name }}
+
+    # 🕵️‍♀️ Debug do arquivo gerado
+    - name: Debug - Conteúdo de terraform.auto.tfvars.json (APÓS GERAÇÃO)
+      shell: bash
+      run: |
+        echo "📄 Conteúdo final de terraform/terraform.auto.tfvars.json:"
+        cat terraform/terraform.auto.tfvars.json || echo "❌ terraform.auto.tfvars.json não encontrado."
+        echo "---"
+
+    # 🗂️ Validando acesso ao repositório na AWS
+    - name: Verificar acesso ao bucket S3
+      shell: bash
+      run: aws s3 ls s3://${{ inputs.s3_bucket_name }}
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+        AWS_REGION: ${{ inputs.AWS_REGION }}
+
+    # 🛡️ Validando credenciais de acesso a AWS
+    - name: Validar credenciais AWS (STS)
+      shell: bash
+      run: aws sts get-caller-identity
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
+        AWS_REGION: ${{ inputs.AWS_REGION }}

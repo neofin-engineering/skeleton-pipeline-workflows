@@ -1,0 +1,97 @@
+# 📄 build-package.yml
+# Action: Build and package the Lambda function
+# Objetivo: Instala dependências, realiza build e empacota código fonte em um ZIP para deploy
+name: Build and Package Lambda
+description: "Instala dependências, compila o TypeScript e empacota a Lambda com node_modules"
+
+inputs:
+  project_name:
+    description: "Nome do projeto (usado para nomear o arquivo zip da Lambda)"
+    required: true
+  lambda_source_path:
+    description: "Caminho para o diretório da Lambda (default: .)"
+    required: false
+    default: "."
+
+runs:
+  using: composite
+  steps:
+    # ADDED DEBUG: Verifique o diretório de trabalho e seus conteúdos ANTES da validação.
+    - name: Debug - Pre-validation directory check
+      shell: bash
+      run: |
+        echo "--- DEBUG: Current directory (pwd) before validation ---"
+        pwd
+        echo "--- DEBUG: List contents of current directory (ls -la) before validation ---"
+        ls -la
+        echo "---------------------------------------------------------"
+
+    # ✅ Valida se o diretório fonte existe
+    - name: Validate input path
+      shell: bash
+      run: |
+        test -d "${{ inputs.lambda_source_path }}" || (echo "::error::Source path '${{ inputs.lambda_source_path }}' does not exist" && exit 1)
+
+    # -------------------------------
+    # 📦 DEPENDENCIES & BUILD
+    # -------------------------------
+    # 📦 Instala dependências
+    - name: Install dependencies
+      shell: bash
+      run: |
+        set -e  
+        cd "${{ inputs.lambda_source_path }}"
+        echo "--- DEBUG: Current directory (pwd) inside Install dependencies step ---"
+        pwd
+        echo "--- DEBUG: List contents of current directory (ls -la) inside Install dependencies step ---"
+        ls -la
+        echo "---------------------------------------------------------"
+        npm install
+
+    # 🏗️ Realiza build do projeto
+    - name: Build TypeScript
+      shell: bash
+      run: |
+        cd "${{ inputs.lambda_source_path }}"
+        echo "--- DEBUG: Current directory (pwd) inside Build TypeScript step ---"
+        pwd
+        echo "--- DEBUG: List contents of current directory (ls -la) inside Build TypeScript step ---"
+        ls -la
+        echo "---------------------------------------------------------"
+        npm run build
+        set +e
+
+    # -------------------------------
+    # 📁 PACKAGE LAMBDA FUNCTION
+    # -------------------------------
+    # 🗜️ Gera o pacote ZIP da Lambda    
+    - name: Create Lambda ZIP with node_modules
+      shell: bash
+      run: |
+        set -e
+
+        cd "${{ inputs.lambda_source_path }}"
+        echo "--- DEBUG: Current directory (pwd) inside Create Lambda ZIP step ---"
+        pwd
+        echo "--- DEBUG: List contents of current directory (ls -la) inside Create Lambda ZIP step ---"
+        ls -la
+        echo "---------------------------------------------------------"
+
+        if [ ! -d "dist" ]; then
+          echo "❌ Diretório 'dist' não encontrado. Verifique se o build foi bem-sucedido."
+          exit 1
+        fi
+
+        echo "🧹 Limpando diretório lambda-package anterior (se existir)..."
+        rm -rf lambda-package
+
+        mkdir -p lambda-package
+        cp -r dist/* lambda-package/
+        cp -r node_modules lambda-package/
+        cp package*.json lambda-package/
+
+        cd lambda-package
+        zip -r ../${{ inputs.project_name }}.zip .
+
+        echo "✅ Lambda empacotada como '${{ inputs.project_name }}.zip'"
+        set +e
