@@ -16,19 +16,41 @@ echo "jq version: $(jq --version)"
 # Garante que o diretório 'terraform' exista antes de tentar escrever o arquivo
 mkdir -p terraform/
 
-# Estratégia Robusta para JSONs Complexos (sem --argfile):
+# Estratégia Robusta para JSONs Complexos:
 # Converte o conteúdo JSON das variáveis de ambiente em literais de string JSON.
 # Isso garante que as aspas internas e quebras de linha sejam escapadas corretamente,
 # permitindo que o 'jq' as parseie com 'fromjson' sem erros de sintaxe do shell.
 environments_json_literal=$(printf '%s' "$ENVIRONMENTS" | jq -sRr '.')
 global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON" | jq -sRr '.')
 
-# Debug dos literais de string JSON escapados
+# --- NOVAS VARIÁVEIS: Preparação para converter strings de IDs em arrays JSON ---
+# Para LAMBDA_SUBNET_IDS
+if [ -n "$LAMBDA_SUBNET_IDS" ]; then
+  IFS=',' read -ra SUBNETS_ARRAY <<< "$LAMBDA_SUBNET_IDS"
+  LAMBDA_SUBNET_IDS_JSON=$(printf '%s\n' "${SUBNETS_ARRAY[@]}" | jq -R . | jq -s .)
+else
+  LAMBDA_SUBNET_IDS_JSON="[]" # Se vazio, retorna array vazio para o Terraform
+fi
+
+# Para LAMBDA_SECURITY_GROUP_IDS
+if [ -n "$LAMBDA_SECURITY_GROUP_IDS" ]; then
+  IFS=',' read -ra SGS_ARRAY <<< "$LAMBDA_SECURITY_GROUP_IDS"
+  LAMBDA_SECURITY_GROUP_IDS_JSON=$(printf '%s\n' "${SGS_ARRAY[@]}" | jq -R . | jq -s .)
+else
+  LAMBDA_SECURITY_GROUP_IDS_JSON="[]" # Se vazio, retorna array vazio para o Terraform
+fi
+
+# Debug dos literais de string JSON escapados e arrays formatados
 echo "--- DEBUG (Script): environments_json_literal (escaped) ---"
 echo "$environments_json_literal"
 echo "--- DEBUG (Script): global_env_vars_json_literal (escaped) ---"
 echo "$global_env_vars_json_literal"
+echo "--- DEBUG (Script): LAMBDA_SUBNET_IDS_JSON (formatted) ---"
+echo "$LAMBDA_SUBNET_IDS_JSON"
+echo "--- DEBUG (Script): LAMBDA_SECURITY_GROUP_IDS_JSON (formatted) ---"
+echo "$LAMBDA_SECURITY_GROUP_IDS_JSON"
 echo "-------------------------------------------------------------"
+
 
 # Constrói o JSON final usando jq.
 # Para os JSONs complexos, usa --arg e depois 'fromjson' no filtro do jq.
@@ -44,6 +66,11 @@ json_content=$(jq -n \
   --arg create_sqs_queue_str "$CREATE_SQS_QUEUE" \
   --arg use_existing_sqs_trigger_str "$USE_EXISTING_SQS_TRIGGER" \
   --arg existing_sqs_queue_name_val "$EXISTING_SQS_QUEUE_NAME" \
+  --arg lambda_vpc_id_val "$LAMBDA_VPC_ID" \
+  --argjson lambda_subnet_ids_json "$LAMBDA_SUBNET_IDS_JSON" \
+  --argjson lambda_security_group_ids_json "$LAMBDA_SECURITY_GROUP_IDS_JSON" \
+  --arg lambda_timeout_str "$LAMBDA_TIMEOUT" \
+  --arg lambda_memory_str "$LAMBDA_MEMORY" \
   '{
     environments: ($environments_str | fromjson),
     global_env_vars: ($global_env_vars_json_str | fromjson),
@@ -53,7 +80,13 @@ json_content=$(jq -n \
     environment: $environment_val,
     create_sqs_queue: ($create_sqs_queue_str | if . == "true" then true else false end),
     use_existing_sqs_trigger: ($use_existing_sqs_trigger_str | if . == "true" then true else false end),
-    existing_sqs_queue_name: $existing_sqs_queue_name_val
+    existing_sqs_queue_name: $existing_sqs_queue_name_val,
+    # --- NOVAS VARIÁVEIS PARA O TERRAFORM ---
+    lambda_vpc_id: $lambda_vpc_id_val,
+    lambda_subnet_ids: $lambda_subnet_ids_json,
+    lambda_security_group_ids: $lambda_security_group_ids_json,
+    lambda_timeout: ($lambda_timeout_str | tonumber),
+    lambda_memory: ($lambda_memory_str | tonumber)
   }')
 
 # Debug: Imprime o resultado do jq antes de escrever no arquivo
