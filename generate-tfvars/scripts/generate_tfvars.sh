@@ -16,6 +16,17 @@ echo "jq version: $(jq --version)"
 # Garante que o diretório 'terraform' exista antes de tentar escrever o arquivo
 mkdir -p terraform/
 
+# --- TRATAMENTO PARA LAMBDA_MEMORY ---
+# Define um valor padrão se LAMBDA_MEMORY estiver vazio
+if [ -z "$LAMBDA_MEMORY" ]; then
+  LAMBDA_MEMORY_PROCESSED="128" # Defina aqui o valor padrão desejado
+  echo "LAMBDA_MEMORY estava vazia. Usando o valor padrão: $LAMBDA_MEMORY_PROCESSED"
+else
+  LAMBDA_MEMORY_PROCESSED="$LAMBDA_MEMORY"
+  echo "LAMBDA_MEMORY: $LAMBDA_MEMORY_PROCESSED"
+fi
+# -----------------------------------
+
 # Estratégia Robusta para JSONs Complexos:
 # Converte o conteúdo JSON das variáveis de ambiente em literais de string JSON.
 # Isso garante que as aspas internas e quebras de linha sejam escapadas corretamente,
@@ -70,7 +81,7 @@ json_content=$(jq -n \
   --argjson lambda_subnet_ids_json "$LAMBDA_SUBNET_IDS_JSON" \
   --argjson lambda_security_group_ids_json "$LAMBDA_SECURITY_GROUP_IDS_JSON" \
   --arg lambda_timeout_str "$LAMBDA_TIMEOUT" \
-  --arg lambda_memory_str "$LAMBDA_MEMORY" \
+  --arg lambda_memory_str "$LAMBDA_MEMORY_PROCESSED" \
   '{
     environments: ($environments_str | fromjson),
     global_env_vars: ($global_env_vars_json_str | fromjson),
