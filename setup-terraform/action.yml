@@ -10,7 +10,7 @@ inputs:
     required: false
     default: '1.5.6'
   environment:
-    description: Nome do ambiente (dev, prod and preview)
+    description: Nome do ambiente (dev, prod and "sandbox")
     required: true
   project_name:
     description: Nome do projeto
