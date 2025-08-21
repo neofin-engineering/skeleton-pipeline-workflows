@@ -45,19 +45,18 @@ runs:
       run: |
         BUCKET_NAME=""
 
-        if [ github.base_ref == "main" ]; then
+        if [ "${{ github.base_ref }}" == "main" ]; then
           echo '${{ inputs.global_env_vars_json }}' > global_env_vars.json
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
-        elif [ github.base_ref == "sandbox" ]; then
+        elif [ "${{ github.base_ref }}" == "sandbox" ]; then
           echo '${{ inputs.global_env_vars_json_sandbox }}' > global_env_vars.json
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
-        elif [ github.base_ref == "dev" ]; then
+        elif [ "${{ github.base_ref }}" == "dev" ]; then
           echo '${{ inputs.global_env_vars_json_dev }}' > global_env_vars.json
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
         else
           echo "🔧 Executando em ambiente desconhecido: ${{ github.base_ref }}"
         fi
-
 
         if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "null" ]; then
           echo "❌ Falha ao extrair o nome do bucket do JSON:"
