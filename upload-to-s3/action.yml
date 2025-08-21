@@ -1,21 +1,22 @@
+# 📄 upload-to-s3.yml
+# Action: Realiza upload do artefato ZIP
+# Objetivo: Enviar o pacote da Lambda para armazenamento no bucket S3
 name: Upload Lambda ZIP to S3
 description: Extrai o bucket do JSON e faz upload do artefato da Lambda
 
 inputs:
-  global_env_vars_json_main:
-    description: "JSON com variáveis globais para a branch main"
-    required: false
-  global_env_vars_json_dev:
-    description: "JSON com variáveis globais para a branch dev"
-    required: false
+  global_env_vars_json:
+    description: "JSON com variáveis globais (ex S3_BUCKET_NAME)"
+    required: true
   global_env_vars_json_sandbox:
     description: "JSON com variáveis globais para a branch sandbox"
-    required: false
+    required: true
+  global_env_vars_json_dev:
+    description: "JSON com variáveis globais para a branch dev"
+    required: true
   aws_access_key_id:
-    description: "AWS Access Key ID"
     required: true
   aws_secret_access_key:
-    description: "AWS Secret Access Key"
     required: true
   aws_region:
     description: "Região AWS para o upload"
@@ -32,39 +33,8 @@ runs:
     - name: Validate inputs
       shell: bash
       run: |
+        test -n "${{ inputs.global_env_vars_json }}" || (echo "::error::global_env_vars_json is required" && exit 1)
         test -n "${{ inputs.project_name }}" || (echo "::error::File '${{ inputs.project_name }}' does not exist" && exit 1)
-
-    # ----------------------------------------
-    # 🕵️ SELECIONA O JSON COM BASE NA BRANCH
-    # ----------------------------------------
-    - name: Selecionar JSON de variáveis de ambiente
-      id: set-env-json
-      shell: bash
-      run: |
-        BRANCH_NAME="${{ github.base_ref }}"
-        case "$BRANCH_NAME" in
-          "main")
-            if [ -z "${{ inputs.global_env_vars_json_main }}" ]; then
-              echo "::error::global_env_vars_json_main is required for the main branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.global_env_vars_json_main }}"
-            ;;
-          "dev")
-            if [ -z "${{ inputs.global_env_vars_json_dev }}" ]; then
-              echo "::error::global_env_vars_json_dev is required for the dev branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.global_env_vars_json_dev }}"
-            ;;
-          "sandbox")
-            if [ -z "${{ inputs.global_env_vars_json_sandbox }}" ]; then
-              echo "::error::global_env_vars_json_sandbox is required for the sandbox branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.global_env_vars_json_sandbox }}"
-            ;;
-          *)
-            echo "::error::Branch '$BRANCH_NAME' is not supported." && exit 1
-            ;;
-        esac
 
     # -------------------------------
     # 🧩 EXTRAI NOME DO BUCKET DO JSON
@@ -73,11 +43,20 @@ runs:
     - name: Extrair nome do bucket do JSON
       shell: bash
       run: |
-        # Usando a saída da etapa anterior
-        ENV_JSON="${{ steps.set-env-json.outputs.env_json }}"
+        BUCKET_NAME=""
 
-        echo "$ENV_JSON" > global_env_vars.json
-        BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
+        if [ github.base_ref == "main" ]; then
+          echo '${{ inputs.global_env_vars_json }}' > global_env_vars.json
+          BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
+        elif [ github.base_ref == "sandbox" ]; then
+          echo '${{ inputs.global_env_vars_json_sandbox }}' > global_env_vars.json
+          BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
+        elif [ github.base_ref == "dev" ]; then
+          echo '${{ inputs.global_env_vars_json_dev }}' > global_env_vars.json
+          BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
+        else
+          echo "🔧 Executando em ambiente desconhecido: ${{ github.base_ref }}"
+
 
         if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "null" ]; then
           echo "❌ Falha ao extrair o nome do bucket do JSON:"
