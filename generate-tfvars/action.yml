@@ -6,65 +6,102 @@ description: 'Gera arquivo terraform.auto.tfvars.json com base em variáveis din
 
 inputs:
   AWS_REGION:
+    description: "Região AWS para o upload"
     required: true
   PROJECT_NAME:
+    description: "Nome do projeto"
     required: true
   ENVIRONMENT:
+    description: "Ambiente (ex: dev, staging, production)"
     required: true
-  GLOBAL_ENV_VARS_JSON:
-    required: true
+  GLOBAL_ENV_VARS_JSON_MAIN:
+    description: "JSON com variáveis de ambiente globais para a branch main"
+    required: false
+  GLOBAL_ENV_VARS_JSON_SANDBOX:
+    description: "JSON com variáveis de ambiente globais para a branch sandbox"
+    required: false
+  GLOBAL_ENV_VARS_JSON_DEV:
+    description: "JSON com variáveis de ambiente globais para a branch dev"
+    required: false
   ENVIRONMENTS:
+    description: "Lista de ambientes"
     required: true
   aws_access_key_id:
+    description: "AWS Access Key ID"
     required: true
   aws_secret_access_key:
+    description: "AWS Secret Access Key"
     required: true
   s3_bucket_name:
+    description: "Nome do bucket S3"
     required: true
   create_sqs_queue:
     description: "Define se a fila SQS deve ser criada (true/false)."
     required: true
-    type: string
     default: "true"
   use_existing_sqs_trigger:
     description: "Define se uma fila SQS existente será usada como trigger para a Lambda."
     required: true
-    type: string
     default: "false"
   existing_sqs_queue_name:
     description: "O NOME da fila SQS existente a ser usada como trigger (requer use_existing_sqs_trigger=true)."
     required: false
-    type: string
     default: ""
   lambda_vpc_id:
     description: "ID da VPC para a função Lambda. Opcional."
     required: false
-    type: string
     default: ""
   lambda_subnet_ids:
     description: "Lista de IDs das subnets para a função Lambda (separados por vírgula). Opcional."
     required: false
-    type: string
     default: ""
   lambda_security_group_ids:
     description: "Lista de IDs dos Security Groups para a função Lambda (separados por vírgula). Opcional."
     required: false
-    type: string
     default: ""
   lambda_timeout:
     description: "Tempo limite de execução da Lambda em segundos. Opcional."
     required: false
-    type: string # Mantemos como string aqui, mas converteremos para número no script
     default: "30"
   lambda_memory:
     description: "Memória da Lambda em MB. Opcional."
     required: false
-    type: string # Mantemos como string aqui, mas converteremos para número no script
     default: "128"
 
 runs:
   using: "composite"
   steps:
+    # 🕵️ SELECIONA O JSON COM BASE NA BRANCH
+    # ----------------------------------------
+    - name: Selecionar JSON de variáveis de ambiente
+      id: set-env-json
+      shell: bash
+      run: |
+        BRANCH_NAME="${{ github.ref_name }}"
+        case "$BRANCH_NAME" in
+          "main")
+            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_MAIN }}" ]; then
+              echo "::error::GLOBAL_ENV_VARS_JSON_MAIN is required for the main branch" && exit 1
+            fi
+            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_MAIN }}"
+            ;;
+          "dev")
+            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}" ]; then
+              echo "::error::GLOBAL_ENV_VARS_JSON_DEV is required for the dev branch" && exit 1
+            fi
+            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}"
+            ;;
+          "sandbox")
+            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}" ]; then
+              echo "::error::GLOBAL_ENV_VARS_JSON_SANDBOX is required for the sandbox branch" && exit 1
+            fi
+            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}"
+            ;;
+          *)
+            echo "::error::Branch '$BRANCH_NAME' is not supported." && exit 1
+            ;;
+        esac
+
     # 📊 Verificar o sucesso no recebimento das variáveis 
     - name: Debug variáveis de entrada na Generate tfvars
       shell: bash
@@ -99,7 +136,7 @@ runs:
         AWS_REGION: ${{ inputs.AWS_REGION }}
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
-        GLOBAL_ENV_VARS_JSON: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
+        GLOBAL_ENV_VARS_JSON: ${{ steps.set-env-json.outputs.env_json }} # <--- AQUI ESTÁ A MUDANÇA
         ENVIRONMENTS: ${{ inputs.ENVIRONMENTS }}
         AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
@@ -113,6 +150,7 @@ runs:
         LAMBDA_SECURITY_GROUP_IDS: ${{ inputs.lambda_security_group_ids }}
         LAMBDA_TIMEOUT: ${{ inputs.lambda_timeout }}
         LAMBDA_MEMORY: ${{ inputs.lambda_memory }}
+
     # 🕵️‍♀️ Debug do arquivo gerado
     - name: Debug - Conteúdo de terraform.auto.tfvars.json (APÓS GERAÇÃO)
       shell: bash
