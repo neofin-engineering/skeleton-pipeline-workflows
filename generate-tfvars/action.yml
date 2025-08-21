@@ -6,34 +6,34 @@ description: 'Gera arquivo terraform.auto.tfvars.json com base em variáveis din
 
 inputs:
   AWS_REGION:
-    description: "Região AWS para o upload"
+    description: "Região AWS onde os recursos serão criados (ex: us-east-1)."
     required: true
   PROJECT_NAME:
-    description: "Nome do projeto"
+    description: "Nome do projeto para o qual o arquivo tfvars será gerado."
     required: true
   ENVIRONMENT:
-    description: "Ambiente (ex: dev, staging, production)"
+    description: "Ambiente para o qual o arquivo tfvars será gerado (ex: dev, staging, prod)."
     required: true
-  GLOBAL_ENV_VARS_JSON_MAIN:
-    description: "JSON com variáveis de ambiente globais para a branch main"
-    required: false
-  GLOBAL_ENV_VARS_JSON_SANDBOX:
-    description: "JSON com variáveis de ambiente globais para a branch sandbox"
-    required: false
+  GLOBAL_ENV_VARS_JSON:
+    description: "Variáveis de ambiente globais em formato JSON (ex: {\"key\": \"value\"})."
+    required: true
   GLOBAL_ENV_VARS_JSON_DEV:
-    description: "JSON com variáveis de ambiente globais para a branch dev"
-    required: false
+    description: "Variáveis de ambiente globais em formato JSON (ex: {\"key\": \"value\"})."
+    required: true
+  GLOBAL_ENV_VARS_JSON_SANDBOX:
+    description: "Variáveis de ambiente globais em formato JSON (ex: {\"key\": \"value\"})."
+    required: true
   ENVIRONMENTS:
-    description: "Lista de ambientes"
+    description: "Lista de ambientes (ex: [\"dev\", \"staging\", \"prod\"])."
     required: true
   aws_access_key_id:
-    description: "AWS Access Key ID"
+    description: "Chave de acesso AWS para autenticação."
     required: true
   aws_secret_access_key:
-    description: "AWS Secret Access Key"
+    description: "Chave secreta AWS para autenticação."
     required: true
   s3_bucket_name:
-    description: "Nome do bucket S3"
+    description: "Nome do bucket S3 onde o arquivo terraform.auto.tfvars.json será armazenado."
     required: true
   create_sqs_queue:
     description: "Define se a fila SQS deve ser criada (true/false)."
@@ -71,37 +71,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    # 🕵️ SELECIONA O JSON COM BASE NA BRANCH
-    # ----------------------------------------
-    - name: Selecionar JSON de variáveis de ambiente
-      id: set-env-json
-      shell: bash
-      run: |
-        BRANCH_NAME="${{ github.base_ref }}"
-        case "$BRANCH_NAME" in
-          "main")
-            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_MAIN }}" ]; then
-              echo "::error::GLOBAL_ENV_VARS_JSON_MAIN is required for the main branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_MAIN }}"
-            ;;
-          "dev")
-            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}" ]; then
-              echo "::error::GLOBAL_ENV_VARS_JSON_DEV is required for the dev branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}"
-            ;;
-          "sandbox")
-            if [ -z "${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}" ]; then
-              echo "::error::GLOBAL_ENV_VARS_JSON_SANDBOX is required for the sandbox branch" && exit 1
-            fi
-            echo "::set-output name=env_json::${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}"
-            ;;
-          *)
-            echo "::error::Branch '$BRANCH_NAME' is not supported." && exit 1
-            ;;
-        esac
-
     # 📊 Verificar o sucesso no recebimento das variáveis 
     - name: Debug variáveis de entrada na Generate tfvars
       shell: bash
@@ -136,7 +105,10 @@ runs:
         AWS_REGION: ${{ inputs.AWS_REGION }}
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
-        GLOBAL_ENV_VARS_JSON: ${{ steps.set-env-json.outputs.env_json }} # <--- AQUI ESTÁ A MUDANÇA
+        BRANCH_NAME: ${{ github.ref_name }}
+        GLOBAL_ENV_VARS_JSON: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
+        GLOBAL_ENV_VARS_JSON_DEV: ${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}
+        GLOBAL_ENV_VARS_JSON_SANDBOX: ${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}
         ENVIRONMENTS: ${{ inputs.ENVIRONMENTS }}
         AWS_ACCESS_KEY_ID: ${{ inputs.aws_access_key_id }}
         AWS_SECRET_ACCESS_KEY: ${{ inputs.aws_secret_access_key }}
@@ -150,7 +122,6 @@ runs:
         LAMBDA_SECURITY_GROUP_IDS: ${{ inputs.lambda_security_group_ids }}
         LAMBDA_TIMEOUT: ${{ inputs.lambda_timeout }}
         LAMBDA_MEMORY: ${{ inputs.lambda_memory }}
-
     # 🕵️‍♀️ Debug do arquivo gerado
     - name: Debug - Conteúdo de terraform.auto.tfvars.json (APÓS GERAÇÃO)
       shell: bash

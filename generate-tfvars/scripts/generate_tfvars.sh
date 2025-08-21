@@ -33,6 +33,13 @@ fi
 # permitindo que o 'jq' as parseie com 'fromjson' sem erros de sintaxe do shell.
 environments_json_literal=$(printf '%s' "$ENVIRONMENTS" | jq -sRr '.')
 global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON" | jq -sRr '.')
+# Usando variaveis de ambiente globais JSON baseado na branch
+if [ "$BRANCH_NAME" == "dev" ]; then
+  global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON_DEV" | jq -sRr '.')
+elif [ "$BRANCH_NAME" == "sandbox" ]; then
+  global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON_SANDBOX" | jq -sRr '.')
+fi
+
 
 # --- NOVAS VARIÁVEIS: Preparação para converter strings de IDs em arrays JSON ---
 # Para LAMBDA_SUBNET_IDS
