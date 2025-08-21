@@ -56,6 +56,7 @@ runs:
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
         else
           echo "🔧 Executando em ambiente desconhecido: ${{ github.base_ref }}"
+        fi
 
 
         if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "null" ]; then
