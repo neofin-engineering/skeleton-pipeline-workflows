@@ -33,7 +33,7 @@ runs:
         ENV=""
         if [[ "${{ github.base_ref }}" == "main" ]]; then
           ENV="prod"
-        elif [[ "${{ github.base_ref }}" == "dev" ]]; then
+        elif [[ "${{ github.base_ref }}" == "develop" ]]; then
           ENV="dev"
         elif [[ "${{ github.base_ref }}" == "sandbox" ]]; then
           ENV="sandbox"

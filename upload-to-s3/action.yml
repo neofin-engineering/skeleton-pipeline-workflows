@@ -51,7 +51,7 @@ runs:
         elif [ "${{ github.base_ref }}" == "sandbox" ]; then
           echo '${{ inputs.global_env_vars_json_sandbox }}' > global_env_vars.json
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
-        elif [ "${{ github.base_ref }}" == "dev" ]; then
+        elif [ "${{ github.base_ref }}" == "develop" ]; then
           echo '${{ inputs.global_env_vars_json_dev }}' > global_env_vars.json
           BUCKET_NAME=$(jq -r '.S3_BUCKET_NAME' global_env_vars.json)
         else
