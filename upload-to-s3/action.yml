@@ -15,8 +15,10 @@ inputs:
     description: "JSON com variáveis globais para a branch dev"
     required: true
   aws_access_key_id:
+    description: "Chave de acesso AWS para autenticação"
     required: true
   aws_secret_access_key:
+    description: "Chave secreta AWS para autenticação"
     required: true
   aws_region:
     description: "Região AWS para o upload"
