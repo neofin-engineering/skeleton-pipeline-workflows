@@ -96,6 +96,7 @@ json_content=$(jq -n \
   --argjson lambda_security_group_ids_json "$LAMBDA_SECURITY_GROUP_IDS_JSON" \
   --arg lambda_timeout_str "$LAMBDA_TIMEOUT" \
   --arg lambda_memory_str "$LAMBDA_MEMORY_PROCESSED" \
+  --arg create_lambda_layer="true" \
   '{
     environments: ($environments_str | fromjson),
     global_env_vars: ($global_env_vars_json_str | fromjson),
@@ -112,6 +113,7 @@ json_content=$(jq -n \
     lambda_security_group_ids: $lambda_security_group_ids_json,
     lambda_timeout: ($lambda_timeout_str | tonumber),
     lambda_memory: ($lambda_memory_str | tonumber)
+    create_lambda_layer: ($create_lambda_layer | if . == "true" then true else false end)
   }')
 
 # Debug: Imprime o resultado do jq antes de escrever no arquivo
