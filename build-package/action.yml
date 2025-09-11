@@ -61,6 +61,20 @@ runs:
         npm run build
         set +e
 
+    - name: Change node_modules type to use only production packages
+      shell: bash
+      run: |
+        set -e
+        cd "${{ inputs.lambda_source_path }}"
+        echo "--- DEBUG: Current directory (pwd) inside Change node_modules type step ---"
+        pwd
+        echo "--- DEBUG: List contents of current directory (ls -la) inside Change node_modules type step ---"
+        ls -la
+        echo "---------------------------------------------------------"
+        rm -rf node_modules
+        npm install --production
+        set +e
+
     # -------------------------------
     # 📁 PACKAGE LAMBDA FUNCTION
     # -------------------------------
