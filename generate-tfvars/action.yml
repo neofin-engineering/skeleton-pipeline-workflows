@@ -122,6 +122,7 @@ runs:
         LAMBDA_SECURITY_GROUP_IDS: ${{ inputs.lambda_security_group_ids }}
         LAMBDA_TIMEOUT: ${{ inputs.lambda_timeout }}
         LAMBDA_MEMORY: ${{ inputs.lambda_memory }}
+        CREATE_LAMBDA_LAYER: "true"
     # 🕵️‍♀️ Debug do arquivo gerado
     - name: Debug - Conteúdo de terraform.auto.tfvars.json (APÓS GERAÇÃO)
       shell: bash
