@@ -34,6 +34,7 @@ fi
 environments_json_literal=$(printf '%s' "$ENVIRONMENTS" | jq -sRr '.')
 echo "DEBUG: environments_json_literal criado."
 echo "Usando default global_env_vars_json_literal. == prod"
+echo "$BRANCH_NAME"
 global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON" | jq -sRr '.')
 # Usando variaveis de ambiente globais JSON baseado na branch
 if [ "$BRANCH_NAME" == "dev" ]; then
