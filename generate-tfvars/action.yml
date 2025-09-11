@@ -105,7 +105,7 @@ runs:
         AWS_REGION: ${{ inputs.AWS_REGION }}
         PROJECT_NAME: ${{ inputs.PROJECT_NAME }}
         ENVIRONMENT: ${{ inputs.ENVIRONMENT }}
-        BRANCH_NAME: ${{ github.ref_name }}
+        BRANCH_NAME: ${{ github.base_ref }}
         GLOBAL_ENV_VARS_JSON: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
         GLOBAL_ENV_VARS_JSON_DEV: ${{ inputs.GLOBAL_ENV_VARS_JSON_DEV }}
         GLOBAL_ENV_VARS_JSON_SANDBOX: ${{ inputs.GLOBAL_ENV_VARS_JSON_SANDBOX }}
