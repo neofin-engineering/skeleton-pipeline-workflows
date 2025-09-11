@@ -94,6 +94,8 @@ runs:
           echo "❌ Falha ao fazer upload para o bucket S3: s3://$S3_BUCKET_NAME/${{ inputs.project_name }}-layer.zip"
           exit 1
         fi
+        aws s3 cp "${{ inputs.project_name }}-layer.zip" "s3://$S3_BUCKET_NAME/${{ inputs.project_name }}-layer.zip" \
+        --region $AWS_REGION --acl private
 
         set +e
         echo "✅ Upload concluído: s3://$S3_BUCKET_NAME/${{ inputs.project_name }}.zip"
