@@ -100,9 +100,10 @@ runs:
         rm -rf lambda-package
 
         mkdir -p lambda-package
+        mkdir -p lambda-layer-package
         cp -r dist/* lambda-package/
-        cp package*.json lambda-package/
-        cp -r node_modules lambda-layer-package/
+        cp package*.json lambda-layer-package/nodejs/
+        cp -r node_modules lambda-layer-package/nodejs/
 
         cd lambda-package
         zip -r ../${{ inputs.project_name }}.zip .
