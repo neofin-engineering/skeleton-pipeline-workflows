@@ -46,7 +46,7 @@ runs:
         echo "--- DEBUG: List contents of current directory (ls -la) inside Install dependencies step ---"
         ls -la
         echo "---------------------------------------------------------"
-        npm install --production
+        npm install
 
     # 🏗️ Realiza build do projeto
     - name: Build TypeScript
@@ -97,5 +97,4 @@ runs:
         zip -r ../${{ inputs.project_name }}-layer.zip .
 
         echo "✅ Lambda empacotada como '${{ inputs.project_name }}.zip'"
-        echo "✅ Lambda Layer empacotada como '${{ inputs.project_name }}-layer.zip'"
         set +e
