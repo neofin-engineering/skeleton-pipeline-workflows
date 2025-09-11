@@ -37,8 +37,8 @@ echo "Usando default global_env_vars_json_literal. == prod"
 echo "$BRANCH_NAME"
 global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON" | jq -sRr '.')
 # Usando variaveis de ambiente globais JSON baseado na branch
-if [ "$BRANCH_NAME" == "dev" ]; then
-  echo "Usando branch dev"
+if [ "$BRANCH_NAME" == "develop" ]; then
+  echo "Usando branch develop"
   echo "Modificando global_env_vars_json_literal para dev"
   global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON_DEV" | jq -sRr '.')
 elif [ "$BRANCH_NAME" == "sandbox" ]; then
