@@ -100,7 +100,7 @@ runs:
         rm -rf lambda-package
 
         mkdir -p lambda-package
-        mkdir -p lambda-layer-package
+        mkdir -p lambda-layer-package/nodejs
         cp -r dist/* lambda-package/
         cp package*.json lambda-layer-package/nodejs/
         cp -r node_modules lambda-layer-package/nodejs/
