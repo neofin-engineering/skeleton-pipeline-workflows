@@ -32,11 +32,17 @@ fi
 # Isso garante que as aspas internas e quebras de linha sejam escapadas corretamente,
 # permitindo que o 'jq' as parseie com 'fromjson' sem erros de sintaxe do shell.
 environments_json_literal=$(printf '%s' "$ENVIRONMENTS" | jq -sRr '.')
+echo "DEBUG: environments_json_literal criado."
+echo "Usando default global_env_vars_json_literal. == prod"
 global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON" | jq -sRr '.')
 # Usando variaveis de ambiente globais JSON baseado na branch
 if [ "$BRANCH_NAME" == "dev" ]; then
+  echo "Usando branch dev"
+  echo "Modificando global_env_vars_json_literal para dev"
   global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON_DEV" | jq -sRr '.')
 elif [ "$BRANCH_NAME" == "sandbox" ]; then
+  echo "Usando branch sandbox"
+  echo "Modificando global_env_vars_json_literal para sandbox"
   global_env_vars_json_literal=$(printf '%s' "$GLOBAL_ENV_VARS_JSON_SANDBOX" | jq -sRr '.')
 fi
 
