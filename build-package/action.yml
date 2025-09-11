@@ -46,7 +46,7 @@ runs:
         echo "--- DEBUG: List contents of current directory (ls -la) inside Install dependencies step ---"
         ls -la
         echo "---------------------------------------------------------"
-        npm install
+        npm install --production
 
     # 🏗️ Realiza build do projeto
     - name: Build TypeScript
