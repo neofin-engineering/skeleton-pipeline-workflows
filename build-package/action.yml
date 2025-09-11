@@ -87,6 +87,7 @@ runs:
 
         mkdir -p lambda-package
         cp -r dist/* lambda-package/
+        cp -r node_modules lambda-package/
         cp package*.json lambda-package/
 
         cd lambda-package
