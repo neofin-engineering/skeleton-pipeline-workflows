@@ -87,11 +87,15 @@ runs:
 
         mkdir -p lambda-package
         cp -r dist/* lambda-package/
-        cp -r node_modules lambda-package/
         cp package*.json lambda-package/
+        cp -r node_modules lambda-layer-package/
 
         cd lambda-package
         zip -r ../${{ inputs.project_name }}.zip .
+        cd ..
+        cd lambda-layer-package
+        zip -r ../${{ inputs.project_name }}-layer.zip .
 
         echo "✅ Lambda empacotada como '${{ inputs.project_name }}.zip'"
+        echo "✅ Lambda Layer empacotada como '${{ inputs.project_name }}-layer.zip'"
         set +e

@@ -36,20 +36,17 @@ inputs:
   create_sqs_queue:
     description: "Define se uma NOVA fila SQS deve ser criada (true/false)."
     required: false
-    type: string
     default: "false"
 
   use_existing_sqs_trigger:
     description: "Define se uma fila SQS existente será usada como trigger para a Lambda."
     required: false
-    type: string
     default: "false"
 
   # MODIFICADO: Input agora é o NOME da fila SQS existente, não o ARN
   existing_sqs_queue_name:
     description: "O NOME da fila SQS existente a ser usada como trigger." # CORRIGIDO: de '=' para ':'
     required: false
-    type: string
     default: ""
 
 runs:
@@ -79,6 +76,7 @@ runs:
     - name: Terraform Plan
       shell: bash
       env:
+        create_lambda_layer: "true"
         TF_VAR_project_name: ${{ inputs.PROJECT_NAME }}
         TF_VAR_s3_bucket_name: ${{ inputs.S3_BUCKET_NAME }}
         TF_VAR_global_env_vars: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
@@ -97,6 +95,7 @@ runs:
     - name: Terraform Apply
       shell: bash
       env:
+        TF_VAR_create_lambda_layer: "true"
         TF_VAR_project_name: ${{ inputs.PROJECT_NAME }}
         TF_VAR_s3_bucket_name: ${{ inputs.S3_BUCKET_NAME }}
         TF_VAR_global_env_vars: ${{ inputs.GLOBAL_ENV_VARS_JSON }}
